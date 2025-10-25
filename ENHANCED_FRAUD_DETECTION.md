@@ -1,7 +1,9 @@
 # Enhanced Fraud Detection - Changes Made
 
 ## Problem
+
 The system was showing transactions as "SAFE" even with:
+
 - Fake/invalid UPI IDs (e.g., `test@fake`, `abc@xyz`)
 - Missing location data
 - No device information
@@ -12,45 +14,49 @@ The system was showing transactions as "SAFE" even with:
 ### 1. Frontend Enhancements (Dashboard Transaction Form)
 
 #### A. Automatic Location Detection
+
 ```javascript
 // Browser asks for location permission on form open
-navigator.geolocation.getCurrentPosition(
-  (position) => {
-    const location = `${latitude},${longitude}`;
-    // Sent with transaction
-  }
-);
+navigator.geolocation.getCurrentPosition((position) => {
+  const location = `${latitude},${longitude}`;
+  // Sent with transaction
+});
 ```
 
 **What happens:**
+
 - When user opens "New Transaction" form
 - Browser requests location permission
 - GPS coordinates are captured and sent with transaction
 - If denied → Marked as "Location unavailable" (triggers fraud alert!)
 
 #### B. Device Fingerprinting
+
 ```javascript
 const deviceId = `device_${navigator.userAgent}_${timestamp}`;
 ```
+
 - Unique device identifier generated from browser info
 - Helps track suspicious devices
 
 #### C. IP Address Collection
+
 ```javascript
-fetch('https://api.ipify.org?format=json')
-  .then(data => data.ip)
+fetch("https://api.ipify.org?format=json").then((data) => data.ip);
 ```
+
 - Real IP address of the user
 - Used for geo-verification
 
 #### D. UPI ID Validation
+
 ```javascript
 // Frontend checks format before submitting
 const upiRegex = /^[a-zA-Z0-9.\-_]{3,}@[a-zA-Z]{3,}$/;
 
 // Examples:
 ✅ john@paytm     - Valid
-✅ user123@ybl    - Valid  
+✅ user123@ybl    - Valid
 ✅ myname@phonepe - Valid
 ❌ test@fake      - Invalid (suspicious keyword)
 ❌ abc            - Invalid (no @provider)
@@ -58,6 +64,7 @@ const upiRegex = /^[a-zA-Z0-9.\-_]{3,}@[a-zA-Z]{3,}$/;
 ```
 
 **Visual Feedback:**
+
 - Security status indicator shows location detection
 - Input hints show valid UPI format
 - Real-time validation on submit
@@ -70,19 +77,19 @@ const upiRegex = /^[a-zA-Z0-9.\-_]{3,}@[a-zA-Z]{3,}$/;
 
 **New/Updated Rules:**
 
-| Rule | Score | Details |
-|------|-------|---------|
-| **High Amount** | +0.3 | Amount > ₹50,000 |
-| **Extreme Amount** | +0.5 | Amount > ₹1,00,000 |
-| **Unusual Time** | +0.2 | Between 10 PM - 6 AM |
-| **Round Amount** | +0.15 | Multiple of ₹1,000 and > ₹10,000 |
-| **Missing Location/Device** | +0.35 ⚠️ | No GPS or device data (was 0.25) |
-| **Self-Transfer** | +0.6 ⚠️ | Sender = Receiver (was 0.5) |
-| **Invalid UPI Format** | +0.5 🆕 | Doesn't match UPI pattern |
-| **Suspicious UPI Pattern** | +0.25 🆕 | Contains test/fake/dummy/fraud/scam |
-| **Numeric UPI** | +0.25 🆕 | >70% numbers (e.g., 123456@paytm) |
-| **Small Amounts** | +0.1 🆕 | ₹100-500 (testing pattern) |
-| **Unusual Precision** | +0.1 🆕 | Non-standard decimals |
+| Rule                        | Score    | Details                             |
+| --------------------------- | -------- | ----------------------------------- |
+| **High Amount**             | +0.3     | Amount > ₹50,000                    |
+| **Extreme Amount**          | +0.5     | Amount > ₹1,00,000                  |
+| **Unusual Time**            | +0.2     | Between 10 PM - 6 AM                |
+| **Round Amount**            | +0.15    | Multiple of ₹1,000 and > ₹10,000    |
+| **Missing Location/Device** | +0.35 ⚠️ | No GPS or device data (was 0.25)    |
+| **Self-Transfer**           | +0.6 ⚠️  | Sender = Receiver (was 0.5)         |
+| **Invalid UPI Format**      | +0.5 🆕  | Doesn't match UPI pattern           |
+| **Suspicious UPI Pattern**  | +0.25 🆕 | Contains test/fake/dummy/fraud/scam |
+| **Numeric UPI**             | +0.25 🆕 | >70% numbers (e.g., 123456@paytm)   |
+| **Small Amounts**           | +0.1 🆕  | ₹100-500 (testing pattern)          |
+| **Unusual Precision**       | +0.1 🆕  | Non-standard decimals               |
 
 **Fraud Threshold:** Score > 0.5 = FRAUD
 
@@ -122,16 +129,17 @@ def validate(self, data):
 ### 3. Real Examples
 
 #### Example 1: Fake UPI (NOW DETECTED)
+
 ```
 Input:
 - Sender: test@fake
-- Receiver: abc@xyz  
+- Receiver: abc@xyz
 - Amount: ₹5,000
 - Location: Not available
 
 Detection:
 ✓ Invalid sender UPI: +0.5
-✓ Invalid receiver UPI: +0.5  
+✓ Invalid receiver UPI: +0.5
 ✓ Suspicious keyword "test": +0.25
 ✓ Suspicious keyword "fake": +0.25
 ✓ Missing location: +0.35
@@ -143,10 +151,11 @@ Message: "⚠️ FRAUD ALERT! Risk: 100% - Invalid sender UPI format, Invalid re
 ```
 
 #### Example 2: Self-Transfer (NOW DETECTED)
+
 ```
 Input:
 - Sender: john@paytm
-- Receiver: john@paytm  
+- Receiver: john@paytm
 - Amount: ₹10,000
 - Location: Available
 
@@ -161,6 +170,7 @@ Message: "⚠️ FRAUD ALERT! Risk: 75% - Self-transfer detected (same UPI IDs),
 ```
 
 #### Example 3: Legitimate Transaction (SAFE)
+
 ```
 Input:
 - Sender: john@paytm
@@ -180,6 +190,7 @@ Message: "✅ Transaction Safe! Confidence: 100%"
 ```
 
 #### Example 4: High Amount Late Night (FRAUD)
+
 ```
 Input:
 - Sender: user@ybl
@@ -204,8 +215,9 @@ Message: "⚠️ FRAUD ALERT! Risk: 85% - High transaction amount (>₹50,000), 
 ### 4. User Experience Improvements
 
 #### Transaction Form
+
 - **Before:** Simple text inputs, no validation
-- **After:** 
+- **After:**
   - Security status indicator
   - Auto-location detection with visual feedback
   - Format hints for UPI IDs
@@ -213,7 +225,9 @@ Message: "⚠️ FRAUD ALERT! Risk: 85% - High transaction amount (>₹50,000), 
   - Detailed fraud alerts with reasons
 
 #### Toast Notifications
-- **Safe Transaction:** 
+
+- **Safe Transaction:**
+
   ```
   ✅ Transaction Safe! Confidence: 95%
   ```
@@ -224,6 +238,7 @@ Message: "⚠️ FRAUD ALERT! Risk: 85% - High transaction amount (>₹50,000), 
   ```
 
 #### Dashboard
+
 - Shows fraud probability percentage
 - Lists specific reasons for fraud detection
 - Color-coded badges (🟢 Safe / 🔴 Fraud)
@@ -232,22 +247,23 @@ Message: "⚠️ FRAUD ALERT! Risk: 85% - High transaction amount (>₹50,000), 
 
 ### 5. Security Improvements Summary
 
-| Feature | Before | After |
-|---------|--------|-------|
-| Location Collection | ❌ Manual input (ignored) | ✅ Auto GPS detection |
-| Device Tracking | ❌ Not collected | ✅ Browser fingerprint |
-| IP Address | ❌ Not collected | ✅ Automatic |
-| UPI Validation | ❌ None | ✅ Format + Pattern check |
-| Self-Transfer Check | ⚠️ Backend only | ✅ Frontend + Backend |
-| Fake UPI Detection | ❌ None | ✅ Keyword + Pattern |
-| Fraud Reasons | ❌ Not shown | ✅ Detailed list |
-| User Feedback | ⚠️ Generic | ✅ Specific with score |
+| Feature             | Before                    | After                     |
+| ------------------- | ------------------------- | ------------------------- |
+| Location Collection | ❌ Manual input (ignored) | ✅ Auto GPS detection     |
+| Device Tracking     | ❌ Not collected          | ✅ Browser fingerprint    |
+| IP Address          | ❌ Not collected          | ✅ Automatic              |
+| UPI Validation      | ❌ None                   | ✅ Format + Pattern check |
+| Self-Transfer Check | ⚠️ Backend only           | ✅ Frontend + Backend     |
+| Fake UPI Detection  | ❌ None                   | ✅ Keyword + Pattern      |
+| Fraud Reasons       | ❌ Not shown              | ✅ Detailed list          |
+| User Feedback       | ⚠️ Generic                | ✅ Specific with score    |
 
 ---
 
 ### 6. Testing the Changes
 
 **Test Case 1: Try Fake UPI**
+
 ```
 1. Open dashboard
 2. Click "New Transaction"
@@ -262,6 +278,7 @@ Expected: ❌ Frontend rejects with "Invalid UPI format" or Backend flags as FRA
 ```
 
 **Test Case 2: Try Self-Transfer**
+
 ```
 1. Enter:
    - Sender: john@paytm
@@ -273,6 +290,7 @@ Expected: ❌ "Sender and receiver cannot be the same!"
 ```
 
 **Test Case 3: Deny Location**
+
 ```
 1. Click "New Transaction"
 2. Deny location permission
@@ -282,6 +300,7 @@ Expected: ⚠️ Higher fraud score due to missing location
 ```
 
 **Test Case 4: Valid Transaction**
+
 ```
 1. Allow location
 2. Enter:
@@ -298,6 +317,7 @@ Expected: ✅ Transaction Safe! Low/no fraud score
 ## Files Modified
 
 1. **frontend/app/dashboard/page.tsx**
+
    - Added location detection
    - Added device fingerprinting
    - Added IP collection
@@ -306,9 +326,10 @@ Expected: ✅ Transaction Safe! Low/no fraud score
    - Enhanced error messages
 
 2. **backend/ml_model/fraud_detector.py**
+
    - Enhanced rule_based_detection()
-   - Added _validate_upi_format()
-   - Added _is_suspicious_upi()
+   - Added \_validate_upi_format()
+   - Added \_is_suspicious_upi()
    - Increased missing location penalty
    - Added pattern-based fraud detection
 

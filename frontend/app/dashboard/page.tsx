@@ -337,35 +337,47 @@ function TransactionFormModal({ onClose, onSuccess }: any) {
 
   useEffect(() => {
     // Get device fingerprint
-    const deviceId = `device_${navigator.userAgent.substring(0, 50).replace(/\s/g, '_')}_${Date.now()}`;
-    
+    const deviceId = `device_${navigator.userAgent
+      .substring(0, 50)
+      .replace(/\s/g, "_")}_${Date.now()}`;
+
     // Get location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const location = `${position.coords.latitude.toFixed(4)},${position.coords.longitude.toFixed(4)}`;
-          setFormData(prev => ({ ...prev, location, device_id: deviceId }));
+          const location = `${position.coords.latitude.toFixed(
+            4
+          )},${position.coords.longitude.toFixed(4)}`;
+          setFormData((prev) => ({ ...prev, location, device_id: deviceId }));
           setLocationStatus("detected");
         },
         (error) => {
           console.error("Location error:", error);
-          setFormData(prev => ({ ...prev, location: "Location unavailable", device_id: deviceId }));
+          setFormData((prev) => ({
+            ...prev,
+            location: "Location unavailable",
+            device_id: deviceId,
+          }));
           setLocationStatus("unavailable");
         }
       );
     } else {
-      setFormData(prev => ({ ...prev, location: "Geolocation not supported", device_id: deviceId }));
+      setFormData((prev) => ({
+        ...prev,
+        location: "Geolocation not supported",
+        device_id: deviceId,
+      }));
       setLocationStatus("unsupported");
     }
 
     // Get IP address
-    fetch('https://api.ipify.org?format=json')
-      .then(res => res.json())
-      .then(data => {
-        setFormData(prev => ({ ...prev, ip_address: data.ip }));
+    fetch("https://api.ipify.org?format=json")
+      .then((res) => res.json())
+      .then((data) => {
+        setFormData((prev) => ({ ...prev, ip_address: data.ip }));
       })
       .catch(() => {
-        setFormData(prev => ({ ...prev, ip_address: "Unknown" }));
+        setFormData((prev) => ({ ...prev, ip_address: "Unknown" }));
       });
   }, []);
 
@@ -403,14 +415,19 @@ function TransactionFormModal({ onClose, onSuccess }: any) {
 
       if (transaction.is_fraud) {
         const riskLevel = transaction.fraud_probability * 100;
-        const reasons = transaction.fraud_details?.reasons?.join(", ") || "High risk detected";
+        const reasons =
+          transaction.fraud_details?.reasons?.join(", ") ||
+          "High risk detected";
         toast.error(
           `⚠️ FRAUD ALERT! Risk: ${riskLevel.toFixed(0)}% - ${reasons}`,
           { duration: 5000 }
         );
       } else {
         toast.success(
-          `✅ Transaction Safe! Confidence: ${(100 - transaction.fraud_probability * 100).toFixed(0)}%`
+          `✅ Transaction Safe! Confidence: ${(
+            100 -
+            transaction.fraud_probability * 100
+          ).toFixed(0)}%`
         );
       }
 
@@ -430,15 +447,19 @@ function TransactionFormModal({ onClose, onSuccess }: any) {
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
           New Transaction
         </h2>
-        
+
         {/* Security Status */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
           <div className="flex items-center gap-2 text-sm">
             <Shield className="h-4 w-4 text-blue-600" />
             <span className="font-medium text-blue-900">Security Status:</span>
-            <span className={`ml-auto ${
-              locationStatus === "detected" ? "text-green-600" : "text-orange-600"
-            }`}>
+            <span
+              className={`ml-auto ${
+                locationStatus === "detected"
+                  ? "text-green-600"
+                  : "text-orange-600"
+              }`}
+            >
               {locationStatus === "detected" && "✓ Location Verified"}
               {locationStatus === "detecting" && "⏳ Detecting location..."}
               {locationStatus === "unavailable" && "⚠ Location unavailable"}
@@ -457,12 +478,17 @@ function TransactionFormModal({ onClose, onSuccess }: any) {
               required
               value={formData.sender_upi}
               onChange={(e) =>
-                setFormData({ ...formData, sender_upi: e.target.value.toLowerCase().trim() })
+                setFormData({
+                  ...formData,
+                  sender_upi: e.target.value.toLowerCase().trim(),
+                })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
               placeholder="yourname@paytm"
             />
-            <p className="text-xs text-gray-500 mt-1">Format: username@provider (e.g., john@paytm, user@ybl)</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Format: username@provider (e.g., john@paytm, user@ybl)
+            </p>
           </div>
 
           <div>
@@ -474,12 +500,17 @@ function TransactionFormModal({ onClose, onSuccess }: any) {
               required
               value={formData.receiver_upi}
               onChange={(e) =>
-                setFormData({ ...formData, receiver_upi: e.target.value.toLowerCase().trim() })
+                setFormData({
+                  ...formData,
+                  receiver_upi: e.target.value.toLowerCase().trim(),
+                })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
               placeholder="receiver@paytm"
             />
-            <p className="text-xs text-gray-500 mt-1">Valid providers: paytm, phonepe, googlepay, ybl, etc.</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Valid providers: paytm, phonepe, googlepay, ybl, etc.
+            </p>
           </div>
 
           <div>
