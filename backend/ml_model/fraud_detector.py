@@ -91,7 +91,7 @@ class FraudDetector:
     
     def rule_based_detection(self, transaction):
         """
-        Simple rule-based fraud detection as fallback
+        Enhanced rule-based fraud detection with UPI validation
         
         Args:
             transaction: Transaction model instance
@@ -107,28 +107,60 @@ class FraudDetector:
         # Rule 1: Very high amount
         if amount > 50000:
             fraud_score += 0.3
-            reasons.append("High transaction amount")
+            reasons.append("High transaction amount (>₹50,000)")
+        elif amount > 100000:
+            fraud_score += 0.5
+            reasons.append("Extremely high amount (>₹1,00,000)")
         
         # Rule 2: Unusual time (late night/early morning)
         hour = transaction.created_at.hour
         if hour < 6 or hour > 22:
             fraud_score += 0.2
-            reasons.append("Unusual transaction time")
+            reasons.append(f"Unusual transaction time ({hour}:00 hrs)")
         
         # Rule 3: Round amounts (often suspicious)
         if amount % 1000 == 0 and amount > 10000:
             fraud_score += 0.15
-            reasons.append("Round amount transaction")
+            reasons.append(f"Round amount (₹{int(amount):,})")
         
-        # Rule 4: Missing device or location info
-        if not transaction.device_id or not transaction.location:
-            fraud_score += 0.25
-            reasons.append("Missing device/location information")
+        # Rule 4: Missing device or location info - CRITICAL
+        if not transaction.device_id or not transaction.location or \
+           transaction.location in ["Location unavailable", "Geolocation not supported", "Unknown"]:
+            fraud_score += 0.35
+            reasons.append("Missing or invalid location/device data")
         
-        # Rule 5: Same sender and receiver
+        # Rule 5: Same sender and receiver - CRITICAL
         if transaction.sender_upi == transaction.receiver_upi:
+            fraud_score += 0.6
+            reasons.append("Self-transfer detected (same UPI IDs)")
+        
+        # Rule 6: Invalid UPI format - CRITICAL
+        sender_valid = self._validate_upi_format(transaction.sender_upi)
+        receiver_valid = self._validate_upi_format(transaction.receiver_upi)
+        
+        if not sender_valid or not receiver_valid:
             fraud_score += 0.5
-            reasons.append("Self-transfer detected")
+            if not sender_valid:
+                reasons.append("Invalid sender UPI format")
+            if not receiver_valid:
+                reasons.append("Invalid receiver UPI format")
+        
+        # Rule 7: Suspicious UPI patterns
+        if self._is_suspicious_upi(transaction.sender_upi) or self._is_suspicious_upi(transaction.receiver_upi):
+            fraud_score += 0.25
+            reasons.append("Suspicious UPI pattern detected")
+        
+        # Rule 8: Multiple small transactions pattern
+        if 100 <= amount <= 500:
+            fraud_score += 0.1
+            reasons.append("Small amount transaction pattern")
+        
+        # Rule 9: Very unusual amounts (non-standard)
+        if amount > 1000 and not (amount % 10 == 0):
+            # Normal transactions usually end in 0 or 5
+            if str(amount).split('.')[-1] not in ['0', '00', '5', '50']:
+                fraud_score += 0.1
+                reasons.append("Unusual amount precision")
         
         is_fraud = fraud_score > 0.5
         
@@ -139,6 +171,44 @@ class FraudDetector:
             'reasons': reasons,
             'timestamp': datetime.now().isoformat()
         }
+    
+    def _validate_upi_format(self, upi_id):
+        """
+        Validate UPI ID format
+        Format: username@provider (e.g., john@paytm, user123@ybl)
+        """
+        import re
+        if not upi_id:
+            return False
+        # UPI regex: alphanumeric + special chars before @, then provider name
+        pattern = r'^[a-zA-Z0-9.\-_]{3,}@[a-zA-Z]{3,}$'
+        return bool(re.match(pattern, upi_id))
+    
+    def _is_suspicious_upi(self, upi_id):
+        """
+        Check for suspicious UPI patterns
+        """
+        if not upi_id:
+            return True
+        
+        upi_lower = upi_id.lower()
+        
+        # Suspicious patterns
+        suspicious_keywords = ['test', 'fake', 'dummy', 'fraud', 'scam', '123456', 'admin', 'temp']
+        for keyword in suspicious_keywords:
+            if keyword in upi_lower:
+                return True
+        
+        # Too many numbers (e.g., 123456789@paytm)
+        username = upi_id.split('@')[0]
+        if len(username) > 0 and sum(c.isdigit() for c in username) / len(username) > 0.7:
+            return True
+        
+        # Very short usernames (< 3 chars)
+        if len(username) < 3:
+            return True
+            
+        return False
     
     def predict(self, transaction):
         """
