@@ -21,8 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'}, label='Confirm Password')
-    phone_number = serializers.CharField(required=False, allow_blank=True)
-    upi_id = serializers.CharField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    upi_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
@@ -37,6 +37,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         phone_number = validated_data.pop('phone_number', None)
         upi_id = validated_data.pop('upi_id', None)
         validated_data.pop('password2')
+        
+        # Convert empty strings to None for optional fields
+        if phone_number == '':
+            phone_number = None
+        if upi_id == '':
+            upi_id = None
         
         user = User.objects.create_user(
             username=validated_data['username'],

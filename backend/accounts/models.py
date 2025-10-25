@@ -8,6 +8,14 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Convert empty strings to None for unique fields
+        if self.upi_id == '':
+            self.upi_id = None
+        if self.phone_number == '':
+            self.phone_number = None
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Shield, Mail, Lock, Loader2 } from "lucide-react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -17,12 +18,20 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.username || !formData.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    
     setLoading(true);
 
     try {
       await login(formData.username, formData.password);
-    } catch (error) {
+      // Navigation is handled in AuthContext after successful login
+    } catch (error: any) {
       console.error("Login error:", error);
+      // Error toast is handled in AuthContext
     } finally {
       setLoading(false);
     }

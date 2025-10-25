@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -31,6 +32,12 @@ export default function RegisterPage() {
     e.preventDefault();
 
     if (formData.password !== formData.password2) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
@@ -38,8 +45,10 @@ export default function RegisterPage() {
 
     try {
       await register(formData);
+      // Navigation is handled in AuthContext after successful registration
     } catch (error) {
       console.error("Registration error:", error);
+      // Error toast is handled in AuthContext
     } finally {
       setLoading(false);
     }
