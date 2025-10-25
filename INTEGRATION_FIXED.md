@@ -3,29 +3,36 @@
 ## Issues Resolved
 
 ### 1. Missing Database Table (`accounts_userprofile`)
+
 **Problem:** The `accounts_userprofile` table didn't exist in the database.
 **Solution:** Created and ran migrations for the `accounts` app.
 
 ### 2. Registration 400 Bad Request
+
 **Problem:** Empty strings for optional fields (`phone_number`, `upi_id`) caused validation issues.
-**Solution:** 
+**Solution:**
+
 - Updated `RegisterSerializer` to accept `allow_null=True` for optional fields
-- Added logic to convert empty strings to `None` 
+- Added logic to convert empty strings to `None`
 - Added `save()` override in `UserProfile` model to handle empty strings
 
 ### 3. Better Error Handling
+
 **Solution:** Added debug logging to `RegisterView` to show validation errors in console.
 
 ## Files Modified
 
 1. **backend/accounts/models.py**
+
    - Added `save()` method to convert empty strings to `None`
 
 2. **backend/accounts/serializers.py**
+
    - Added `allow_null=True` to optional fields
    - Convert empty strings to `None` in `create()` method
 
 3. **backend/accounts/views.py**
+
    - Added error logging for debugging
 
 4. **frontend/.env.local**
@@ -34,6 +41,7 @@
 ## How to Run
 
 ### Backend (Terminal 1)
+
 ```powershell
 cd D:\UPI-Fraud-Detection\backend
 . .\venv\Scripts\Activate.ps1
@@ -41,6 +49,7 @@ python manage.py runserver 8000
 ```
 
 ### Frontend (Terminal 2)
+
 ```powershell
 cd D:\UPI-Fraud-Detection\frontend
 npm run dev
@@ -81,6 +90,7 @@ npm run dev
 ## Verification
 
 Registration endpoint tested successfully:
+
 ```bash
 ✅ Direct serializer test: PASSED
 ✅ Python script test: PASSED
@@ -100,10 +110,12 @@ Registration endpoint tested successfully:
 ## Troubleshooting
 
 ### If registration still fails:
+
 - Check backend terminal for validation errors (now logged)
 - Verify `NEXT_PUBLIC_API_URL` in frontend/.env.local
 - Clear browser localStorage and try again
 - Restart both servers
 
 ### CORS Issues:
+
 Backend is configured to allow `http://localhost:3000` by default. If your frontend runs on a different port, update `CORS_ALLOWED_ORIGINS` in backend/.env or settings.py.
